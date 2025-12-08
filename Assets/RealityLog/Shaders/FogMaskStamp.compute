@@ -1,0 +1,89 @@
+#pragma kernel CSMain
+#pragma kernel CSBottomClear
+
+#define PI 3.14159265359
+#define TWO_PI 6.28318530718
+#define HALF_PI 1.57079632679
+
+RWTexture2D<float> Result;
+
+int2 _TextureSize;
+float3 _ForwardDir;
+float _CosOuterAngle;
+float _CosInnerAngle;
+float _BottomClearLatitude;
+int _BottomClearEnabled;
+float _TopClearLatitude;
+int _TopClearEnabled;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint width = (uint)_TextureSize.x;
+    uint height = (uint)_TextureSize.y;
+
+    if (id.x >= width || id.y >= height)
+    {
+        return;
+    }
+
+    int2 pixel = int2(id.xy);
+
+    float2 uv = (float2(pixel) + 0.5) / float2(width, height);
+    float latitude = uv.y * PI - HALF_PI;
+
+    // Force the top clear region to remain cleared regardless of head movement
+    if (_TopClearEnabled != 0 && latitude >= _TopClearLatitude)
+    {
+        Result[pixel] = 1.0;
+        return;
+    }
+
+    // Don't clear the bottom area - it should show red overlay instead
+    if (_BottomClearEnabled != 0 && latitude <= _BottomClearLatitude)
+    {
+        return;
+    }
+
+    float longitude = uv.x * TWO_PI - PI;
+
+    float cosLat = cos(latitude);
+    float3 dir = float3(sin(longitude) * cosLat, sin(latitude), cos(longitude) * cosLat);
+
+    dir = normalize(dir);
+
+    float dotValue = dot(dir, _ForwardDir);
+
+    float stampValue = 0.0;
+
+    if (dotValue >= _CosInnerAngle)
+    {
+        stampValue = 1.0;
+    }
+    else if (dotValue >= _CosOuterAngle)
+    {
+        float denom = max(_CosInnerAngle - _CosOuterAngle, 1e-5);
+        stampValue = saturate((dotValue - _CosOuterAngle) / denom);
+    }
+
+    if (stampValue <= 0.0)
+    {
+        return;
+    }
+
+    float previous = Result[pixel];
+
+    if (stampValue > previous)
+    {
+        Result[pixel] = stampValue;
+    }
+}
+
+[numthreads(8, 8, 1)]
+void CSBottomClear(uint3 id : SV_DispatchThreadID)
+{
+    // This kernel is no longer needed since we handle the bottom area in the fragment shader
+    // But we keep it for compatibility - it just does nothing now
+    // The bottom area is detected in the fragment shader based on UV coordinates
+}
+
