@@ -38,11 +38,7 @@ public sealed class FogSphereResetBinding : MonoBehaviour
             return;
         }
 
-        if (!fogSphereController.IsSphereVisible)
-        {
-            return;
-        }
-
+        // Always reset fog when Y button is pressed, regardless of visibility
         fogSphereController.ResetFog();
     }
 }

@@ -46,11 +46,37 @@ namespace RealityLog.UI.Coverage
 
         private void Awake()
         {
-            var mainCamera = UnityEngine.Camera.main;
-
-            if (headTransform == null && mainCamera != null)
+            // Try to find CenterEyeAnchor first
+            if (headTransform == null)
             {
-                headTransform = mainCamera.transform;
+                GameObject cameraRig = GameObject.Find("OVRCameraRig");
+                if (cameraRig != null)
+                {
+                    Transform centerEye = cameraRig.transform.Find("TrackingSpace/CenterEyeAnchor");
+                    if (centerEye != null)
+                    {
+                        headTransform = centerEye;
+                    }
+                }
+            }
+            
+            // Fallback to Camera.main
+            if (headTransform == null)
+            {
+                var mainCamera = UnityEngine.Camera.main;
+                if (mainCamera != null)
+                {
+                    headTransform = mainCamera.transform;
+                }
+            }
+            
+            // Ensure this GameObject is parented to CenterEyeAnchor if it's FogSphereHUD
+            if (gameObject.name == "FogSphereHUD" && headTransform != null && transform.parent != headTransform)
+            {
+                transform.SetParent(headTransform);
+                transform.localPosition = Vector3.zero;
+                transform.localRotation = Quaternion.identity;
+                transform.localScale = Vector3.one;
             }
 
             if (sphereTransform == null)

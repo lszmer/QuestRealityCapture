@@ -3,6 +3,12 @@ using UnityEngine;
 using UnityEditor;
 using RealityLog.UI.Coverage;
 
+/// <summary>
+/// Editor tool for setting up FogSphereHUD. 
+/// NOTE: This is OPTIONAL - all setup now happens automatically at runtime.
+/// FogSphereController, FogSphereButtonSetup, and RecordingStartFogResetConnector
+/// handle all configuration automatically when the scene starts.
+/// </summary>
 public class SetupFogSphereHUD : EditorWindow
 {
     [MenuItem("Tools/Setup Fog Sphere HUD")]
@@ -130,8 +136,96 @@ public class SetupFogSphereHUD : EditorWindow
         recordingSO.FindProperty("fogController").objectReferenceValue = fogController;
         recordingSO.ApplyModifiedProperties();
         
+        // Setup Y button binding for fog reset (if not already set up)
+        SetupYButtonBinding(fogController);
+        
+        // Setup X button to call OnRecordingStarted when recording begins
+        SetupRecordingStartConnection(recordingHandler);
+        
         EditorUtility.SetDirty(fogSphereHUD);
         Debug.Log("FogSphereHUD setup complete!");
+    }
+    
+    private static void SetupYButtonBinding(FogSphereController fogController)
+    {
+        // Look for existing Y button binding GameObject
+        GameObject yButtonBinding = GameObject.Find("FogSphereResetBinding_Y");
+        
+        if (yButtonBinding == null)
+        {
+            yButtonBinding = new GameObject("FogSphereResetBinding_Y");
+            
+            // Add ButtonPressedUnityEvent component
+            var buttonEvent = yButtonBinding.AddComponent<ButtonPressedUnityEvent>();
+            var buttonEventSO = new SerializedObject(buttonEvent);
+            // OVRInput.Button.Two = Y button on left controller
+            buttonEventSO.FindProperty("button").intValue = 2; // OVRInput.Button.Two
+            // OVRInput.Controller.LTouch = Left controller
+            buttonEventSO.FindProperty("controller").intValue = 1; // OVRInput.Controller.LTouch
+            buttonEventSO.ApplyModifiedProperties();
+            
+            // Add FogSphereResetBinding component
+            var resetBinding = yButtonBinding.AddComponent<FogSphereResetBinding>();
+            var resetBindingSO = new SerializedObject(resetBinding);
+            resetBindingSO.FindProperty("fogSphereController").objectReferenceValue = fogController;
+            resetBindingSO.ApplyModifiedProperties();
+            
+            EditorUtility.SetDirty(yButtonBinding);
+            Debug.Log("Y button binding for fog reset created!");
+        }
+        else
+        {
+            // Update existing binding
+            var resetBinding = yButtonBinding.GetComponent<FogSphereResetBinding>();
+            if (resetBinding != null)
+            {
+                var resetBindingSO = new SerializedObject(resetBinding);
+                resetBindingSO.FindProperty("fogSphereController").objectReferenceValue = fogController;
+                resetBindingSO.ApplyModifiedProperties();
+            }
+        }
+    }
+    
+    private static void SetupRecordingStartConnection(CoverageRecordingStartHandler recordingHandler)
+    {
+        // Find all ToggleValueUnityEvent components in the scene
+        var allToggles = Object.FindObjectsByType<ToggleValueUnityEvent>(FindObjectsSortMode.None);
+        
+        foreach (var toggle in allToggles)
+        {
+            // Check if this toggle is the recording toggle by looking for PoseLogger.StartLogging connections
+            // or by checking if it's connected to a ButtonPressedUnityEvent with button 260
+            var toggleGO = toggle.gameObject;
+            
+            // Add RecordingStartFogResetConnector if not already present
+            var connector = toggleGO.GetComponent<RecordingStartFogResetConnector>();
+            if (connector == null)
+            {
+                connector = toggleGO.AddComponent<RecordingStartFogResetConnector>();
+                var connectorSO = new SerializedObject(connector);
+                connectorSO.FindProperty("fogResetHandler").objectReferenceValue = recordingHandler;
+                connectorSO.ApplyModifiedProperties();
+                EditorUtility.SetDirty(toggleGO);
+                Debug.Log($"Added RecordingStartFogResetConnector to {toggleGO.name}");
+            }
+            else
+            {
+                // Update existing connector
+                var connectorSO = new SerializedObject(connector);
+                connectorSO.FindProperty("fogResetHandler").objectReferenceValue = recordingHandler;
+                connectorSO.ApplyModifiedProperties();
+            }
+        }
+        
+        if (allToggles.Length == 0)
+        {
+            Debug.LogWarning("No ToggleValueUnityEvent found in scene. " +
+                           "Please manually add RecordingStartFogResetConnector to the recording toggle GameObject.");
+        }
+        else
+        {
+            Debug.Log("Recording start connection setup complete!");
+        }
     }
 }
 #endif
