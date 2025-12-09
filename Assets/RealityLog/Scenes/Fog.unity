@@ -1579,7 +1579,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Press X on left controlller \nto start logging"
+  m_text: "Press X on left controlller \nto start logging.\nPress Y on left controller
+    \nto reset fog"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1977,7 +1978,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: -0.2}
-  m_SizeDelta: {x: 250, y: 50}
+  m_SizeDelta: {x: 250, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!95 &1963279080
 Animator:
@@ -2684,7 +2685,7 @@ MonoBehaviour:
   maskResolution: {x: 512, y: 256}
   brushAngleDegrees: 30
   brushFeatherDegrees: 5
-  bottomClearAngleDegrees: 50
+  bottomClearAngleDegrees: 35
   topClearAngleDegrees: 30
   viewOffsetDegrees: {x: 0, y: -13}
   maskUpdateInterval: 0.03
