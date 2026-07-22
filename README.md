@@ -155,28 +155,67 @@ To convert raw depth maps into linear or 3D form, refer to the companion project
 
 ---
 
-## 🚀 Installation & Usage
+## 🚀 Building the APK from Unity
 
-1. Download the APK from [GitHub Releases](https://github.com/t-34400/QuestRealityCapture/releases)
-2. Install with ADB:
+This fork is a Unity project — there is no prebuilt APK for the Fog of War version. You build it yourself from source and deploy it to the headset. (For the **vanilla** app, a prebuilt APK is available from the [upstream releases](https://github.com/t-34400/QuestRealityCapture/releases); see the upstream README for that path.)
 
-   ```bash
-   adb install QuestRealityCapture.apk
-   ```
-3. Launch the app on **Meta Quest 3 or 3s** (firmware **v74+** required)
-4. When the green instruction panel appears, press the **menu button on the left controller** to dismiss it and start logging
-5. The **Fog of War** sphere appears around you — look around to clear the fog and see which regions still need scanning. A controller button toggles / resets the fog, and it resets automatically when recording begins.
-6. Data will be saved under the session folder as described above
+### 1. Install the correct Unity version
 
-Load `Fog.unity` for the coverage HUD, or `No_Fog.unity` for the original capture behavior (A/B comparison).
+This project **must** be opened with **Unity 6000.2.9f1** (see [`ProjectSettings/ProjectVersion.txt`](ProjectSettings/ProjectVersion.txt)). Opening it with a different version may trigger asset/package upgrades.
+
+1. Install [Unity Hub](https://unity.com/download).
+2. In Unity Hub → **Installs** → **Install Editor** → **Archive**, install version **6000.2.9f1**.
+3. When prompted for modules, check **Android Build Support** (this also installs the **Android SDK & NDK Tools** and **OpenJDK** sub-modules — all three are required).
+
+### 2. Open the project
+
+1. In Unity Hub → **Projects** → **Add** → select this repository's root folder.
+2. Open it with **6000.2.9f1**. The first import may take several minutes.
+
+### 3. Configure the build target
+
+1. **File → Build Profiles** (Unity 6). Select **Android** (or the **Meta Quest** platform, available in Unity 6.1+) and click **Switch Platform** if it isn't already active.
+2. Confirm the **Scene List** contains `Assets/RealityLog/Scenes/Fog.unity` (the Fog of War scene — enabled by default). Swap in `No_Fog.unity` for the original, fog-free capture behavior.
+3. The key settings are already configured in the project and shouldn't need changing:
+   * Scripting backend: **IL2CPP**, target architecture: **ARM64**
+   * Min/Target Android SDK: **32**
+   * Application ID: `com.CHL.Fog_RealityLog`
+   * **Project Settings → XR Plug-in Management → Android**: **OpenXR** enabled with the **Oculus Touch Controller Profile**
+
+### 4. Enable Developer Mode on the Quest
+
+1. In the **Meta Horizon** mobile app, pair your headset and enable **Developer Mode** (requires a [Meta developer account / verified organization](https://developer.oculus.com/manage/)).
+2. Connect the Quest to your computer via USB-C and put on the headset to **Allow USB debugging** when prompted.
+
+### 5. Build & deploy
+
+**Option A — Build and Run (recommended):** With the headset connected, in **Build Profiles** click **Build And Run**. Unity builds the APK and installs it directly onto the headset.
+
+**Option B — Build the APK, then install manually:** Click **Build**, choose an output path (e.g. `Fog_RealityLog.apk`), then install it with ADB:
+
+```bash
+adb install -r Fog_RealityLog.apk
+```
+
+Alternatively, drag the APK onto the device using **[Meta Quest Developer Hub (MQDH)](https://developers.meta.com/horizon/documentation/unity/ts-odh/)** or **SideQuest**.
+
+### 6. Run it
+
+1. Launch the app on the **Meta Quest 3 or 3s** (firmware **v74+** required) — it appears under **Unknown Sources** in the app library.
+2. When the green instruction panel appears, press the **menu button on the left controller** to dismiss it and start logging.
+3. The **Fog of War** sphere appears around you — look around to clear the fog and see which regions still need scanning. A controller button toggles / resets the fog, and it resets automatically when recording begins.
+4. Data is saved under the session folder as described above.
 
 Required permissions (camera/scene access) are requested automatically at runtime.
+
+> For details on the underlying vanilla capture app (data parsing, the prebuilt APK, and the reconstruction pipeline), see the [upstream QuestRealityCapture README](https://github.com/t-34400/QuestRealityCapture).
 
 ---
 
 ## 🛠 Environment
 
-* Unity **6000.0.30f1**
+* Unity **6000.2.9f1** (required — this fork; the upstream vanilla app targets an older 6000.0.x)
+* Android Build Support (with Android SDK/NDK + OpenJDK modules)
 * Meta OpenXR SDK
 * Device: Meta Quest 3 or 3s only
 * Approx. recording frame rate: \~25 FPS (camera & depth)
