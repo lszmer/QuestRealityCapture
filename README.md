@@ -1,30 +1,40 @@
-# QuestRealityCapture
+# QuestRealityCapture — Fog of War Coverage Visualization
 
 <p align="center">
   <img src="docs/overview.png" alt="QuestRealityCapture" width="320"/>
 </p>
 
-**Capture and store real-world data on Meta Quest 3 or 3s, including HMD/controller poses, stereo passthrough images, camera metadata, and depth maps.**
+**A Meta Quest 3 scanning app that adds a real-time "Fog of War" HUD on top of multimodal capture (stereo passthrough, depth, and 6-DoF poses), so the user can see which parts of the room have already been scanned.**
 
 ---
 
 ## 📖 Overview
 
-`QuestRealityCapture` is a Unity-based data logging app for Meta Quest 3. It captures and stores synchronized real-world information such as headset and controller poses, images from both passthrough cameras, camera characteristics, and depth data, organized per session.
+This fork extends the open-source [`QuestRealityCapture`](https://github.com/t-34400/QuestRealityCapture) framework with a **Fog of War (FoW) coverage visualization**.
 
-For **data parsing, visualization, and reconstruction**, refer to the companion project:
+The base app records synchronized real-world data on a Meta Quest 3 — headset and controller poses, stereo passthrough images, camera characteristics, and depth maps — but gives the user **no feedback on what they have already scanned**. Missed regions become holes in the offline reconstruction that are only found after the session.
+
+The **Fog of War** fixes this: the world starts covered in fog, and the fog clears in the direction the user looks. Whatever is still foggy has not been observed yet, guiding the user toward complete scene coverage during the scan.
+
+> 👉 **The main contribution of this fork is documented in [docs/FogOfWar.md](docs/FogOfWar.md).**
+
+For **data parsing, visualization, and reconstruction** of the captured data, refer to the companion project:
 **[Meta Quest 3D Reconstruction](https://github.com/t-34400/metaquest-3d-reconstrucion)**
-
-This includes:
-
-* Scripts for **loading and decoding** camera poses, intrinsics, and depth descriptors
-* Conversions of **raw YUV images** and **depth maps** to usable formats (RGB, point clouds)
-* Utilities for **reconstructing 3D scenes** using [Open3D](http://www.open3d.org/)
-* Export pipelines to prepare data for **SfM/SLAM tools** like **COLMAP**
 
 ---
 
-## ✅ Features
+## Fog of War
+
+The FoW is a heads-up display driven by a **two-stage GPU pipeline**:
+
+1. **Mask generation (compute shader)** — a persistent equirectangular mask texture records every direction the user has looked. Each frame, the head's forward vector is "stamped" into the mask with a configurable, soft-edged brush ([`FogMaskStamp.compute`](Assets/RealityLog/Shaders/FogMaskStamp.compute), [`FogSphereController.cs`](Assets/RealityLog/Scripts/Runtime/UI/Coverage/FogSphereController.cs)).
+2. **Rendering (fragment shader)** — a semi-transparent sphere around the head samples the mask; observed regions become transparent, unobserved regions stay foggy ([`FogSphere.shader`](Assets/RealityLog/Shaders/FogSphere.shader)).
+
+Coverage resets automatically when a recording session begins, and two scenes (`Fog.unity` / `No_Fog.unity`) allow A/B comparison. See [docs/FogOfWar.md](docs/FogOfWar.md) for the full design.
+
+---
+
+## ✅ Base Capture Features (inherited through the fork)
 
 * Records HMD and controller poses (in Unity coordinate system)
 * Captures **YUV passthrough images** from **both left and right cameras**
@@ -155,7 +165,10 @@ To convert raw depth maps into linear or 3D form, refer to the companion project
    ```
 3. Launch the app on **Meta Quest 3 or 3s** (firmware **v74+** required)
 4. When the green instruction panel appears, press the **menu button on the left controller** to dismiss it and start logging
-5. Data will be saved under the session folder as described above
+5. The **Fog of War** sphere appears around you — look around to clear the fog and see which regions still need scanning. A controller button toggles / resets the fog, and it resets automatically when recording begins.
+6. Data will be saved under the session folder as described above
+
+Load `Fog.unity` for the coverage HUD, or `No_Fog.unity` for the original capture behavior (A/B comparison).
 
 Required permissions (camera/scene access) are requested automatically at runtime.
 
@@ -178,4 +191,6 @@ This project uses Meta’s OpenXR SDK — please ensure compliance with its lice
 
 ---
 
-## 📌 TODO
+## 🙏 Acknowledgments
+
+The multimodal capture backend is built on the open-source [`QuestRealityCapture`](https://github.com/t-34400/QuestRealityCapture) framework by [t-34400](https://github.com/t-34400). This fork adds the **Fog of War coverage visualization** on top of it.
